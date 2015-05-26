@@ -1,0 +1,74 @@
+<?php
+/*
+require 'vendor/autoload.php';
+require 'config.php';
+
+use Facebook\FacebookSession;
+use Facebook\FacebookJavaScriptLoginHelper;
+use Facebook\Entities\SignedRequest;
+
+FacebookSession::setDefaultApplication(
+    FACEBOOK_APP_ID,
+    FACEBOOK_APP_SECRET
+);
+$helper = new FacebookJavaScriptLoginHelper();
+$session = $helper->getSession();
+var_dump($session);
+die;
+*/
+function parse_signed_request($signed_request) {
+    list($encoded_sig, $payload) = explode('.', $signed_request, 2); 
+
+    $secret = FACEBOOK_APP_SECRET; // Use your app secret here
+
+    $sig = base64_url_decode($encoded_sig);
+    $data = json_decode(base64_url_decode($payload), true);
+
+    return $data;
+
+    // confirm the signature
+    $expected_sig = hash_hmac('sha256', $payload, $secret, $raw = true);
+    if ($sig !== $expected_sig) {
+        echo 'Bad Signed JSON signature!';
+        return null;
+    }
+
+    return $data;
+}
+
+function base64_url_decode($input) {
+    return base64_decode(strtr($input, '-_', '+/'));
+}
+
+var_dump(parse_signed_request($_POST['signed_request']));
+?>
+
+<html>
+<body>
+    <div id="fb-root"></div>
+    <script>
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId      : "<?php echo FACEBOOK_APP_ID ?>",
+            status     : true, // check login status
+            cookie     : true, // enable cookies to allow the server to access the session
+            xfbml      : true,  // parse XFBML
+            version    : 'v2.3'
+        });
+
+        FB.api('/me', function(response) {
+            console.log(response);
+        });
+    };
+
+    (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+    </script>
+
+</body>
+</html>
